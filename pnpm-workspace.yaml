@@ -1,0 +1,4 @@
+packages:
+  - 'maprix-web'
+  - 'backend'
+  - 'shared/*'

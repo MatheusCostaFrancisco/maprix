@@ -1,0 +1,19 @@
+{
+  "name": "maprix",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Maprix — microsaas B2B para engenheiros (UTM↔lat/long, memorial descritivo, shapefile SIG-RI)",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:web": "pnpm --filter maprix-web dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.1"
+}
