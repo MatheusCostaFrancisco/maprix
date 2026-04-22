@@ -19,9 +19,16 @@
     "dev": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
-    "@maprix/types": "workspace:*"
+    "@maprix/types": "workspace:*",
+    "@turf/area": "^7.1.0",
+    "@turf/bearing": "^7.1.0",
+    "@turf/distance": "^7.1.0",
+    "@turf/helpers": "^7.1.0",
+    "jszip": "^3.10.1",
+    "proj4": "^2.12.1"
   },
   "devDependencies": {
+    "@types/proj4": "^2.5.6",
     "typescript": "^5.6.3"
   }
 }
