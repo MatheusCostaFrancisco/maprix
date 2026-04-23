@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { CoordinateSystem, Polygon } from '@maprix/types';
-import { convertPolygon } from './index.js';
+import { computeArea, computePerimeter, convertPolygon } from './index.js';
 
 const SHAPE_TYPE_POLYGON = 5;
 
@@ -209,8 +209,18 @@ export async function gerarShapefileZip(poly: Polygon): Promise<Uint8Array> {
       : { type: 'LatLong', datum: 'SIRGAS2000' };
   const projected = poly.system === targetSystem ? poly : convertPolygon(poly, targetSystem);
 
-  const { shp, shx } = buildShp(projected);
-  const dbf = buildDbf(projected);
+  // Calcula área e perímetro e grava na metadata antes de montar o DBF.
+  // Sem isso, os campos AREA_M2 e PERIM_M saíam zerados porque o Polygon
+  // vindo da UI/backend não carrega esses valores — eram só exibidos.
+  const area_m2 = computeArea(projected);
+  const perimetro_m = computePerimeter(projected);
+  const projectedWithMeta: Polygon = {
+    ...projected,
+    metadata: { ...projected.metadata, area_m2, perimetro_m },
+  };
+
+  const { shp, shx } = buildShp(projectedWithMeta);
+  const dbf = buildDbf(projectedWithMeta);
   const prj = wktForSystem(projected.system);
 
   const zip = new JSZip();
