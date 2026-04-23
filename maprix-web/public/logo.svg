@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" fill="none">
+  <g stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 33V7l11 13L27 7v26"/>
+  </g>
+  <circle cx="20" cy="22" r="3" fill="#3FB8E0"/>
+  <text x="44" y="28" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" fill="currentColor" letter-spacing="-0.5">Maprix</text>
+</svg>
