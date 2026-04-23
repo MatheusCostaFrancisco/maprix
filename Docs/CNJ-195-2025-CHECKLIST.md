@@ -37,9 +37,9 @@ As fontes oficiais consultadas **não contêm uma especificação técnica fecha
 |---|---|---|---|---|
 | 1.1 | Conjunto contém `.shp`, `.shx`, `.dbf`, `.prj` | 🟦 Manual v1.2 | ✅ | Todos 4 presentes no ZIP |
 | 1.2 | Todos os arquivos do grupo compartilham o **mesmo nome-base** | 🟦 Manual v1.2 | ✅ | `imovel.shp/.shx/.dbf/.prj` |
-| 1.3 | Nome-base único por polígono quando há múltiplos grupos no mesmo envio | 🟦 Manual v1.2 | ❌ | Gerador usa `imovel` fixo — colide em envio múltiplo |
+| 1.3 | Nome-base único por polígono quando há múltiplos grupos no mesmo envio | 🟦 Manual v1.2 | ✅ | `baseName` configurável via `ShapefileOptions`; default derivado da matrícula (commit `cdbf09e`, GAP-04) |
 | 1.4 | Empacotamento em ZIP para transporte | 🟧 CONVENÇÃO | ✅ | ZIP DEFLATE gerado via JSZip |
-| 1.5 | Presença opcional de `.cpg` (codepage) | 🟨 SPEC ESRI | ❌ | Não gerado |
+| 1.5 | Presença opcional de `.cpg` (codepage) | 🟨 SPEC ESRI | ✅ | `.cpg` com `ISO-8859-1` (commit `bb8c30b`, GAP-03) |
 | 1.6 | Presença opcional de `.qix`/`.sbn` (índices) | 🟨 SPEC ESRI | ✅ (N/A) | Não obrigatórios — correto omitir |
 
 ## 2. Arquivo `.shp` (geometria)
@@ -52,7 +52,7 @@ As fontes oficiais consultadas **não contêm uma especificação técnica fecha
 | 2.4 | File length correto em 16-bit words (big-endian, posição 24) | 🟨 SPEC ESRI | ✅ | 118 palavras = 236 bytes (= tamanho real) |
 | 2.5 | BBox global coerente com BBox do record | 🟨 SPEC ESRI | ✅ | Iguais no teste |
 | 2.6 | Polígono fechado (primeiro vértice = último) | 🟦 Manual v1.2 | ✅ | P0 == P4 |
-| 2.7 | Anel exterior no sentido **horário** (CW) | 🟨 SPEC ESRI | ❌ | Shoelace sum = −1.76e-6 → **counter-clockwise** |
+| 2.7 | Anel exterior no sentido **horário** (CW) | 🟨 SPEC ESRI | ✅ | Shoelace sum = +1.76e-6 → clockwise (commit `fd35805`, GAP-01) |
 | 2.8 | Registro único com `numParts=1` para polígono simples (sem ilhas) | 🟨 SPEC ESRI | ✅ | `numParts=1`, `parts=[0]` |
 | 2.9 | `numPoints` ≥ 4 (mínimo 3 vértices únicos + fechamento) | 🟨 SPEC ESRI | ✅ | 5 pontos |
 
@@ -69,13 +69,13 @@ As fontes oficiais consultadas **não contêm uma especificação técnica fecha
 | # | Requisito | Origem | Status | Evidência |
 |---|---|---|---|---|
 | 4.1 | Version byte = `0x03` (dBase III) ou `0x83` (com memo) | 🟨 SPEC ESRI | ✅ | `0x03` |
-| 4.2 | Byte 29 (Language Driver ID / LDID) setado para encoding explícito | 🟨 SPEC ESRI | ❌ | `0x00` — encoding indefinido |
+| 4.2 | Byte 29 (Language Driver ID / LDID) setado para encoding explícito | 🟨 SPEC ESRI | ✅ | `0x03` (Windows ANSI / CP1252) (commit `bb8c30b`, GAP-03) |
 | 4.3 | EOF marker `0x1a` no último byte | 🟨 SPEC ESRI | ✅ | Confirmado |
 | 4.4 | Deletion flag de cada registro = `0x20` (não deletado) | 🟨 SPEC ESRI | ✅ | Confirmado |
 | 4.5 | Campo `ID` ou equivalente para identificar a feição | 🟥 INFERIDO | ⚠️ | Presente como `ID` (C,10) — mas nome pode não bater com dicionário do ONR |
 | 4.6 | Campo de **matrícula registral** (nome sugerido: `MATRICULA`) | 🟥 INFERIDO | ❌ | Ausente — hoje a matrícula vai no campo `ID` |
-| 4.7 | Campo de **área em m²** com precisão adequada | 🟥 INFERIDO | ⚠️ | Campo `AREA_M2` (N,16,3) existe mas vem **zerado** por bug — `computeArea` não é chamado antes de escrever o DBF |
-| 4.8 | Campo de **perímetro em m** | 🟥 INFERIDO | ⚠️ | Campo `PERIM_M` (N,16,3) existe mas **zerado** pelo mesmo bug |
+| 4.7 | Campo de **área em m²** com precisão adequada | 🟥 INFERIDO | ✅ | `AREA_M2=10033.067` no teste (commit `207ab8b`, GAP-02) |
+| 4.8 | Campo de **perímetro em m** | 🟥 INFERIDO | ✅ | `PERIM_M=400.662` no teste (commit `207ab8b`, GAP-02) |
 | 4.9 | Campo de **proprietário** | 🟥 INFERIDO | ❌ | Ausente |
 | 4.10 | Campo de **município/UF** | 🟥 INFERIDO | ❌ | Ausente |
 | 4.11 | Campo de **CNS** (Código Nacional de Serventia) | 🟥 INFERIDO | ❓ | Manual ONR indica que CNS é preenchido via **formulário UI**, não via DBF — ausência pode ser correta |
@@ -107,9 +107,9 @@ As fontes oficiais consultadas **não contêm uma especificação técnica fecha
 
 | # | Requisito | Origem | Status | Evidência |
 |---|---|---|---|---|
-| 7.1 | Encoding declarado (LDID do DBF ou `.cpg`) | 🟨 SPEC ESRI | ❌ | Nenhum dos dois |
-| 7.2 | Suporte a caracteres acentuados (ç, ã, é) em nomes/municípios | 🟥 INFERIDO | ❌ | `asciiBytes()` atual faz `charCodeAt(i) & 0xff` — truncamento silencioso em UTF-16 > 255 |
-| 7.3 | Encoding ISO-8859-1 (Latin1) ou UTF-8 consistente | 🟧 CONVENÇÃO | ❌ | Indefinido |
+| 7.1 | Encoding declarado (LDID do DBF ou `.cpg`) | 🟨 SPEC ESRI | ✅ | Ambos: LDID=0x03 e `.cpg=ISO-8859-1` (commit `bb8c30b`, GAP-03) |
+| 7.2 | Suporte a caracteres acentuados (ç, ã, é) em nomes/municípios | 🟥 INFERIDO | ✅ | `latin1Bytes` preserva codepoints 0x00–0xFF; "São-Paulo" grava `ã=0xE3` (commit `bb8c30b`) |
+| 7.3 | Encoding ISO-8859-1 (Latin1) ou UTF-8 consistente | 🟧 CONVENÇÃO | ✅ | ISO-8859-1 declarado no `.cpg` e no LDID (commit `bb8c30b`) |
 
 ## 8. Metadados de processo (fora do shapefile, via API/UI)
 
@@ -124,11 +124,13 @@ As fontes oficiais consultadas **não contêm uma especificação técnica fecha
 
 ## Resumo quantitativo
 
+**Pós-correção dos 4 bloqueantes (commits `bb8c30b` → `cdbf09e`, 2026-04-22):**
+
 - **Itens verificados:** 40
-- **✅ Conforme:** 22
-- **⚠️ Parcial:** 4
-- **❌ Não conforme:** 10
-- **❓ Indeterminável:** 4 (dependentes de Manual Técnico Operacional completo)
+- **✅ Conforme:** 30 (+8 dos 22 originais)
+- **⚠️ Parcial:** 2 (−2)
+- **❌ Não conforme:** 4 (−6) — todos 🟠 (GAP-05, GAP-06, GAP-07 partes, GAP-09); nenhum 🔴 restante
+- **❓ Indeterminável:** 4 (inalterados — dependem do Manual Técnico Operacional completo)
 
 ## Observações importantes
 
