@@ -105,9 +105,15 @@ function padRight(s: string, length: number): string {
   return s.length >= length ? s.slice(0, length) : s + ' '.repeat(length - s.length);
 }
 
-function asciiBytes(s: string): Uint8Array {
+// Codifica uma string em ISO-8859-1 (Latin-1), um byte por UTF-16 code unit.
+// Codepoints > 0xFF (fora do Latin-1) viram '?' — preserva alinhamento byte⇔char
+// em campos de tamanho fixo do DBF, evitando truncar no meio de um caractere.
+function latin1Bytes(s: string): Uint8Array {
   const out = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+  for (let i = 0; i < s.length; i++) {
+    const cp = s.charCodeAt(i);
+    out[i] = cp <= 0xff ? cp : 0x3f;
+  }
   return out;
 }
 
@@ -136,13 +142,17 @@ function buildDbf(poly: Polygon): ArrayBuffer {
   view.setUint32(4, recordCount, true);
   view.setUint16(8, headerLen, true);
   view.setUint16(10, recordLen, true);
-  // Bytes 12..31 are zero
+  // Bytes 12..31 ficam zerados por default. Exceção: byte 29 é o Language Driver ID
+  // (LDID). 0x03 = Windows ANSI / CP1252 — codifica acentos do português brasileiro
+  // (ã, ç, é, ó, ú, ê, â, ô) de forma idêntica ao ISO-8859-1 e é amplamente
+  // reconhecido por ArcGIS, QGIS e ferramentas tradicionais de GIS no Brasil.
+  view.setUint8(29, 0x03);
 
   // Field descriptors
   fields.forEach((f, i) => {
     const offset = 32 + i * 32;
     const name = padRight(f.name, 11).slice(0, 11);
-    bytes.set(asciiBytes(name), offset);
+    bytes.set(latin1Bytes(name), offset);
     view.setUint8(offset + 11, f.type.charCodeAt(0));
     view.setUint8(offset + 16, f.length);
     view.setUint8(offset + 17, f.decimals);
@@ -157,11 +167,11 @@ function buildDbf(poly: Polygon): ArrayBuffer {
   let recOff = headerLen;
   view.setUint8(recOff, 0x20); // deletion flag = not deleted
   recOff += 1;
-  bytes.set(asciiBytes(padRight(matricula.slice(0, 10), 10)), recOff);
+  bytes.set(latin1Bytes(padRight(matricula.slice(0, 10), 10)), recOff);
   recOff += 10;
-  bytes.set(asciiBytes(area.toFixed(3).padStart(16, ' ').slice(-16)), recOff);
+  bytes.set(latin1Bytes(area.toFixed(3).padStart(16, ' ').slice(-16)), recOff);
   recOff += 16;
-  bytes.set(asciiBytes(perim.toFixed(3).padStart(16, ' ').slice(-16)), recOff);
+  bytes.set(latin1Bytes(perim.toFixed(3).padStart(16, ' ').slice(-16)), recOff);
   recOff += 16;
 
   // EOF marker
@@ -210,6 +220,10 @@ export async function gerarShapefileZip(poly: Polygon): Promise<Uint8Array> {
   folder.file('imovel.shx', shx);
   folder.file('imovel.dbf', dbf);
   folder.file('imovel.prj', prj);
+  // .cpg companion — declara o encoding do .dbf para leitores modernos. Tem
+  // precedência sobre o LDID do header quando os dois divergem. ISO-8859-1 é o
+  // nome canônico aceito por GDAL, QGIS, PostGIS e ESRI.
+  folder.file('imovel.cpg', 'ISO-8859-1\n');
 
   const out = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   return out;

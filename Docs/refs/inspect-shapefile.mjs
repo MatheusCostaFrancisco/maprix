@@ -14,7 +14,7 @@ const modUrl = pathToFileURL(path.resolve(ROOT, 'shared/geo-core/dist/index.js')
 const { gerarShapefileZip } = await import(modUrl);
 
 // Polígono de teste: imóvel retangular de 100x100m perto de Campinas/SP
-// em UTM 22S SIRGAS2000
+// em UTM 22S SIRGAS2000. Matrícula inclui acentos para validar encoding do DBF.
 const poly = {
   points: [
     { id: 'P1', x: 500000, y: 7500000 },
@@ -24,12 +24,29 @@ const poly = {
   ],
   system: { type: 'UTM', zone: 22, hemisphere: 'S', datum: 'SIRGAS2000' },
   metadata: {
-    matricula: '12345',
-    proprietario: 'Teste MVP',
-    municipio: 'Campinas',
+    matricula: 'São-Paulo',
+    proprietario: 'João Antônio Müller',
+    municipio: 'São Paulo',
     uf: 'SP',
   },
 };
+
+// Sanity: teste do helper de encoding Latin-1 isolado do DBF.
+function latin1EncodeLocal(s) {
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    const cp = s.charCodeAt(i);
+    out[i] = cp <= 0xff ? cp : 0x3f;
+  }
+  return out;
+}
+console.log('==== ENCODING SANITY ====');
+for (const s of ['São Paulo', 'João Antônio Müller', 'Açaí', 'Coração']) {
+  const bytes = latin1EncodeLocal(s);
+  const decoded = Buffer.from(bytes).toString('latin1');
+  const ok = decoded === s ? '✅' : '❌';
+  console.log(`  ${ok} "${s}" → [${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join(' ')}] → "${decoded}"`);
+}
 
 const zip = await gerarShapefileZip(poly);
 const zipPath = path.join(OUT, 'maprix-sigri.zip');
@@ -43,6 +60,15 @@ const shp = readFileSync(path.join(extractedDir, 'imovel.shp'));
 const shx = readFileSync(path.join(extractedDir, 'imovel.shx'));
 const dbf = readFileSync(path.join(extractedDir, 'imovel.dbf'));
 const prj = readFileSync(path.join(extractedDir, 'imovel.prj'), 'utf-8');
+let cpg = null;
+try {
+  cpg = readFileSync(path.join(extractedDir, 'imovel.cpg'), 'utf-8');
+} catch {
+  /* .cpg pode não existir (pré GAP-03) */
+}
+console.log('\n==== CPG ====');
+if (cpg) console.log('  content:', JSON.stringify(cpg.trim()));
+else console.log('  (sem .cpg)');
 
 console.log('\n==== SHP (' + shp.length + ' bytes) ====');
 // Header (100 bytes)
@@ -125,6 +151,8 @@ const recCount = dbf.readUInt32LE(4);
 const headerLen = dbf.readUInt16LE(8);
 const recLen = dbf.readUInt16LE(10);
 console.log('  version byte:', '0x' + version_.toString(16), '(0x03=dBase III)');
+const ldid = dbf.readUInt8(29);
+console.log('  LDID (byte 29):', '0x' + ldid.toString(16).padStart(2, '0'), '(0x03=Windows ANSI/CP1252)');
 console.log('  last update:', 1900 + yy, mm, dd);
 console.log('  record count:', recCount);
 console.log('  header length:', headerLen);
@@ -152,8 +180,10 @@ for (let r = 0; r < recCount; r++) {
   let cursor = 0;
   fields.forEach((f) => {
     const raw = rowBytes.slice(cursor, cursor + f.len);
-    const asText = raw.toString('binary');
-    console.log(`    ${f.name}: "${asText}" (raw bytes: ${[...raw].map((b) => b.toString(16).padStart(2, '0')).join(' ')})`);
+    const asLatin1 = raw.toString('latin1');
+    const asBinary = raw.toString('binary');
+    console.log(`    ${f.name} (${f.type}): latin1="${asLatin1}" | bytes: ${[...raw].map((b) => b.toString(16).padStart(2, '0')).join(' ')}`);
+    if (asLatin1 !== asBinary) console.log(`       note: latin1 != binary interpretation`);
     cursor += f.len;
   });
   roff += 1 + fields.reduce((s, f) => s + f.len, 0);
