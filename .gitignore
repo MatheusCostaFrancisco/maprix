@@ -16,3 +16,8 @@ coverage/
 .turbo/
 *.tsbuildinfo
 .claude/settings.local.json
+
+# Material de referência externo (PDFs baixados, artefatos de inspeção)
+Docs/refs/*.pdf
+Docs/refs/*.txt
+Docs/refs/inspect-out/
