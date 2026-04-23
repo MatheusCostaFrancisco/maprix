@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { Outlet } from 'react-router-dom';
 import { useSidebarState } from '@/hooks/use-sidebar-state';
 import { Sidebar } from './sidebar';
@@ -9,16 +11,15 @@ interface AppShellProps {
 }
 
 /**
- * Moldura de aplicação compartilhada entre as áreas de engenharia e cartório.
- * Combina:
- *   - Sidebar desktop colapsável (w-64 ↔ w-16) com persistência em localStorage
- *   - Sheet drawer em mobile (<768px)
- *   - Topbar sticky com breadcrumb, ThemeToggle e Avatar
- *   - Container centrado com max-w-5xl para o conteúdo de cada rota
+ * Moldura compartilhada entre engenharia e cartório.
+ * Cartório força tema light enquanto a área está montada e restaura
+ * a preferência do usuário ao desmontar.
  */
 export function AppShell({ area }: AppShellProps) {
   const items = getNav(area);
   const { collapsed, toggle } = useSidebarState();
+
+  useForcedLightTheme(area === 'cartorio');
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
@@ -33,4 +34,21 @@ export function AppShell({ area }: AppShellProps) {
       </div>
     </div>
   );
+}
+
+function useForcedLightTheme(enabled: boolean) {
+  const { theme, setTheme } = useTheme();
+  const previousRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!enabled) return;
+    previousRef.current = theme;
+    setTheme('light');
+    return () => {
+      const prev = previousRef.current;
+      if (prev && prev !== 'light') setTheme(prev);
+    };
+    // theme é lido apenas no mount — não queremos re-disparar em toggles internos
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, setTheme]);
 }

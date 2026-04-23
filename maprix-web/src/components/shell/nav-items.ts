@@ -1,4 +1,4 @@
-import { ArrowLeftRight, FileText, type LucideIcon } from 'lucide-react';
+import { ArrowLeftRight, BookText, FileText, Inbox, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   to: string;
@@ -18,8 +18,10 @@ export const engenhariaNav: NavItem[] = [
   { to: '/engenharia/memorial-e-shapefile', label: 'Memorial & Shapefile', icon: FileText },
 ];
 
-/** Placeholder — M5 preenche com rotas reais do cartório. */
-export const cartorioNav: NavItem[] = [];
+export const cartorioNav: NavItem[] = [
+  { to: '/cartorio/matriculas', label: 'Matrículas', icon: BookText },
+  { to: '/cartorio/protocolos', label: 'Protocolos', icon: Inbox },
+];
 
 export function getNav(area: Area): NavItem[] {
   return area === 'engenharia' ? engenhariaNav : cartorioNav;

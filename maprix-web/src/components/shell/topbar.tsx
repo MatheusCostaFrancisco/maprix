@@ -49,7 +49,7 @@ export function Topbar({ area, items }: TopbarProps) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
+          {area !== 'cartorio' && <ThemeToggle />}
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs">MC</AvatarFallback>
           </Avatar>
