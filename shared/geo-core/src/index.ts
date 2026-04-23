@@ -16,6 +16,7 @@ export { projString, decimalToDMS, normalizeAzimute };
 export { gerarMemorial, gerarMemorialDxf } from './memorial.js';
 export type { MemorialData, MemorialRow } from './memorial.js';
 export { gerarShapefileZip } from './shapefile.js';
+export type { ShapefileOptions } from './shapefile.js';
 
 // Garante que o anel de pontos esteja em sentido horário (CW). Usa a fórmula do
 // shoelace no formato (x2-x1)*(y2+y1): sum > 0 ⇒ CW, sum < 0 ⇒ CCW.

@@ -199,7 +199,35 @@ function wktForSystem(sys: CoordinateSystem): string {
   return `PROJCS["UTM Zone ${sys.zone}${sys.hemisphere} ${sys.datum}",GEOGCS["${sys.datum}",${datum},PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",${centralMeridian}],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",${falseNorthing}],UNIT["metre",1]]`;
 }
 
-export async function gerarShapefileZip(poly: Polygon): Promise<Uint8Array> {
+export interface ShapefileOptions {
+  /**
+   * Nome-base dos 5 arquivos do shapefile (sem extensão). Default: `mat-<slug>`
+   * quando há matrícula na metadata, senão `imovel-<timestamp>`. Usado para
+   * evitar colisão em envios de múltiplos polígonos no mesmo lote do ONR.
+   */
+  baseName?: string;
+}
+
+function slugifyForFilename(s: string): string {
+  const cleaned = s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return cleaned || 'imovel';
+}
+
+function defaultBaseName(poly: Polygon): string {
+  const mat = poly.metadata?.matricula;
+  if (mat) return `mat-${slugifyForFilename(String(mat))}`;
+  return `imovel-${Date.now()}`;
+}
+
+export async function gerarShapefileZip(
+  poly: Polygon,
+  options?: ShapefileOptions,
+): Promise<Uint8Array> {
   if (poly.points.length < 3) throw new Error('shapefile exige pelo menos 3 vértices');
 
   // SIG-RI exige coordenadas geográficas (lat/long) em SIRGAS2000.
@@ -230,17 +258,19 @@ export async function gerarShapefileZip(poly: Polygon): Promise<Uint8Array> {
   const dbf = buildDbf(projectedWithMeta);
   const prj = wktForSystem(projected.system);
 
+  const baseName = (options?.baseName ?? defaultBaseName(poly)).trim() || defaultBaseName(poly);
+
   const zip = new JSZip();
   const folder = zip.folder('maprix-sigri');
   if (!folder) throw new Error('não foi possível criar pasta no zip');
-  folder.file('imovel.shp', shp);
-  folder.file('imovel.shx', shx);
-  folder.file('imovel.dbf', dbf);
-  folder.file('imovel.prj', prj);
+  folder.file(`${baseName}.shp`, shp);
+  folder.file(`${baseName}.shx`, shx);
+  folder.file(`${baseName}.dbf`, dbf);
+  folder.file(`${baseName}.prj`, prj);
   // .cpg companion — declara o encoding do .dbf para leitores modernos. Tem
   // precedência sobre o LDID do header quando os dois divergem. ISO-8859-1 é o
   // nome canônico aceito por GDAL, QGIS, PostGIS e ESRI.
-  folder.file('imovel.cpg', 'ISO-8859-1\n');
+  folder.file(`${baseName}.cpg`, 'ISO-8859-1\n');
 
   const out = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   return out;

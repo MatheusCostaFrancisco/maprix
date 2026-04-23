@@ -48,12 +48,26 @@ for (const s of ['São Paulo', 'João Antônio Müller', 'Açaí', 'Coração'])
   console.log(`  ${ok} "${s}" → [${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join(' ')}] → "${decoded}"`);
 }
 
-const zip = await gerarShapefileZip(poly);
+// Passamos baseName explícito 'imovel' pra manter as leituras do script alinhadas
+// com os arquivos extraídos (o default agora é derivado da matrícula).
+const zip = await gerarShapefileZip(poly, { baseName: 'imovel' });
 const zipPath = path.join(OUT, 'maprix-sigri.zip');
 writeFileSync(zipPath, Buffer.from(zip));
 console.log('ZIP gerado:', zipPath, `(${zip.length} bytes)`);
 
-// Listar + extrair
+// GAP-04 — Dois ZIPs com baseNames distintos, lado a lado, sem colisão.
+console.log('\n==== GAP-04 TEST: baseNames distintos ====');
+const dualDir = path.join(OUT, 'dual');
+mkdirSync(dualDir, { recursive: true });
+for (const name of ['lote-01', 'lote-02']) {
+  const z = await gerarShapefileZip(poly, { baseName: name });
+  const p = path.join(dualDir, `${name}.zip`);
+  writeFileSync(p, Buffer.from(z));
+  execSync(`unzip -o -d ${dualDir} ${p}`, { stdio: 'pipe' });
+}
+execSync(`ls -la ${dualDir}/maprix-sigri/`, { stdio: 'inherit' });
+
+// Listar + extrair o principal
 execSync(`unzip -o -d ${OUT} ${zipPath}`, { stdio: 'inherit' });
 const extractedDir = path.join(OUT, 'maprix-sigri');
 const shp = readFileSync(path.join(extractedDir, 'imovel.shp'));

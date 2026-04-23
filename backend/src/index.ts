@@ -94,11 +94,13 @@ app.post('/api/memorial/dxf', (req, res) => {
 
 app.post('/api/shapefile', async (req, res) => {
   try {
-    const { polygon } = req.body ?? {};
+    const { polygon, baseName } = req.body ?? {};
     assertPolygon(polygon);
-    const zip = await gerarShapefileZip(polygon);
+    const opts = typeof baseName === 'string' && baseName.trim() ? { baseName } : undefined;
+    const zip = await gerarShapefileZip(polygon, opts);
+    const zipFilename = opts ? `${opts.baseName}.zip` : 'maprix-sigri.zip';
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="maprix-sigri.zip"');
+    res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
     res.send(Buffer.from(zip));
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
