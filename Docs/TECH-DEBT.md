@@ -93,3 +93,38 @@ Itens adiados conscientemente. Cada um tem **quando reavaliar** e **justificativ
 **Quando reavaliar:** quando um usuário real reportar erro de ingestão ou cálculo inconsistente. Spec em `Docs/CNJ-195-2025-GAPS.md` GAP-09.
 
 **Biblioteca candidata:** `@turf/boolean-valid` + implementação caseira de detecção de auto-intersecção O(n²).
+
+---
+
+## 6. Tema light forçado no `/cartorio`
+
+**Decidido em:** 2026-04-23 (Milestone 5 do refator de design system).
+
+**Estado atual:** `AppShell` força `theme: 'light'` ao montar quando `area === 'cartorio'` via hook `useForcedLightTheme` em `maprix-web/src/components/shell/app-shell.tsx`. O `ThemeToggle` é ocultado no Topbar nessa área. A preferência prévia do usuário é restaurada ao desmontar.
+
+**Por que foi adiado:** premissa de design da skill `maprix-ui` (§7 — "Cartório (light default)" / Mercury vibes institucional). Decisão tomada **sem usuário cartorial real** validando — é uma aposta baseada em referência visual.
+
+**Quando reavaliar:**
+- Quando o produto for **piloto com escrivão/oficial real**, perguntar diretamente:
+  - O light forçado incomoda em uso noturno?
+  - Faz sentido reabrir o toggle de tema na área?
+- Se houver pedido por dark, a remoção é trivial: tirar `useForcedLightTheme(area === 'cartorio')` do `AppShell` e remover a condicional `area !== 'cartorio'` do `Topbar`. Os tokens dark já estão prontos em `globals.css`.
+
+---
+
+## 7. Autenticação real (login + sessão)
+
+**Decidido em:** 2026-04-22 (UI-AUDIT — Decisão pendente #4) e formalizado na M6 do refator.
+
+**Estado atual:** **nenhuma autenticação implementada.** Todas as rotas (`/engenharia/*`, `/cartorio/*`) são acessíveis sem login. O componente `UnauthorizedState` existe em `maprix-web/src/components/engenharia/result-states.tsx` mas só é renderizado em modo de stub via query param `?state=unauthorized` para validar o design do estado.
+
+**Por que foi adiado:** o ciclo do design system precisava de um produto com TELAS para aplicar tokens, componentes e estados. Auth foi escopada para fora dos 6 milestones para não estourar prazo.
+
+**Quando reavaliar:** **antes de qualquer demo externa** (engenheiro ou cartório piloto). Não é seguro expor o backend aberto, mesmo que ainda não persista dados sensíveis.
+
+**Caminho sugerido (a confirmar quando começar):**
+- Backend: JWT em cookie httpOnly + middleware `requireAuth` no Express
+- Frontend: rota `/login`, `useAuth()` hook + redirect em rotas protegidas via `<Route element={<RequireAuth />}>`
+- Storage: tabela `users` no MySQL existente (mesma stack do AcoVitta)
+- 2FA: avaliar quando houver usuário pagante (não bloqueante pra MVP)
+- O certificado digital ICP-Brasil **não** entra aqui — o profissional autentica direto no portal do ONR para o upload final do SIG-RI.
