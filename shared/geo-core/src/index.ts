@@ -17,6 +17,22 @@ export { gerarMemorial, gerarMemorialDxf } from './memorial.js';
 export type { MemorialData, MemorialRow } from './memorial.js';
 export { gerarShapefileZip } from './shapefile.js';
 
+// Garante que o anel de pontos esteja em sentido horário (CW). Usa a fórmula do
+// shoelace no formato (x2-x1)*(y2+y1): sum > 0 ⇒ CW, sum < 0 ⇒ CCW.
+// Spec ESRI Shapefile §3.11 exige anel exterior em CW; leitores estritos (ArcGIS,
+// PostGIS com check_geometry) podem tratar CCW como ilha (furo) e inverter a área.
+export function ensureClockwise(points: GeoPoint[]): GeoPoint[] {
+  if (points.length < 3) return points;
+  let sum = 0;
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    const p1 = points[i]!;
+    const p2 = points[(i + 1) % n]!;
+    sum += (p2.x - p1.x) * (p2.y + p1.y);
+  }
+  return sum >= 0 ? points : [...points].reverse();
+}
+
 function sameSystem(a: CoordinateSystem, b: CoordinateSystem): boolean {
   if (a.type !== b.type) return false;
   if (a.type === 'UTM' && b.type === 'UTM') {

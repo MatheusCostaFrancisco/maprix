@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { CoordinateSystem, Polygon } from '@maprix/types';
-import { computeArea, computePerimeter, convertPolygon } from './index.js';
+import { computeArea, computePerimeter, convertPolygon, ensureClockwise } from './index.js';
 
 const SHAPE_TYPE_POLYGON = 5;
 
@@ -212,10 +212,17 @@ export async function gerarShapefileZip(poly: Polygon): Promise<Uint8Array> {
   // Calcula área e perímetro e grava na metadata antes de montar o DBF.
   // Sem isso, os campos AREA_M2 e PERIM_M saíam zerados porque o Polygon
   // vindo da UI/backend não carrega esses valores — eram só exibidos.
+  // A ordem dos pontos não afeta area/perim (turf usa valor absoluto),
+  // então o cálculo é feito antes do ensureClockwise.
   const area_m2 = computeArea(projected);
   const perimetro_m = computePerimeter(projected);
+
+  // Anel exterior em sentido horário (ESRI Shapefile spec §3.11).
+  const orientedPoints = ensureClockwise(projected.points);
+
   const projectedWithMeta: Polygon = {
     ...projected,
+    points: orientedPoints,
     metadata: { ...projected.metadata, area_m2, perimetro_m },
   };
 
