@@ -38,3 +38,14 @@ export interface ConferenciaResult {
   aprovado: boolean;
   divergenciasPorPonto: Array<{ pontoId: string; delta_m: number }>;
 }
+
+/** Perfil de acesso — define qual frente o usuário enxerga após o login. */
+export type Role = 'engenheiro' | 'cartorio';
+
+/** Usuário público (sem hash de senha) — contrato compartilhado web↔backend. */
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  role: Role;
+}
