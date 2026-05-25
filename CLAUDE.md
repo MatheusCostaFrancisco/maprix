@@ -15,9 +15,9 @@ Toda operação geométrica/geodésica passa pelo `shared/geo-core`. Nunca dupli
 ## Workspaces
 
 - `maprix-web` — UI (React/Vite)
-- `backend` — API (Express/TS/MySQL)
+- `backend` — API (Express/TS/Postgres via Drizzle) + auth JWT por role
 - `shared/geo-core` — motor geodésico (proj4js, turf)
-- `shared/types` — contratos TS compartilhados
+- `shared/types` — contratos TS compartilhados (inclui `User`/`Role`)
 
 ## Dependências externas obrigatórias (para os próximos prompts)
 
@@ -35,6 +35,7 @@ Toda operação geométrica/geodésica passa pelo `shared/geo-core`. Nunca dupli
 ## Stack
 
 - Frontend: React + Vite + TypeScript
-- Backend: Express + TypeScript + MySQL (mesma stack do AcoVitta)
+- Backend: Express + TypeScript + Postgres (Drizzle ORM). Ver ADR 0001 (Postgres em vez de MySQL).
+- Auth: JWT em cookie httpOnly; role `engenheiro`|`cartorio` define a frente após o login. Signup público cria engenheiro; cartório é seed/convite.
 - Monorepo: pnpm workspaces
 - Lint: ESLint + Prettier (a adicionar)
