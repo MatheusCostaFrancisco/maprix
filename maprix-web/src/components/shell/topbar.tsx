@@ -1,7 +1,9 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, LogOut } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import type { Area, NavItem } from './nav-items';
 import { AREA_LABELS } from './nav-items';
@@ -12,10 +14,22 @@ interface TopbarProps {
   items: NavItem[];
 }
 
+function userInitials(name: string | null, email: string | undefined): string {
+  const src = name || email || '?';
+  return src
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]!.toUpperCase())
+    .join('');
+}
+
 export function Topbar({ area, items }: TopbarProps) {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const current = items.find((item) => location.pathname.startsWith(item.to));
   const areaLabel = AREA_LABELS[area];
+  const initials = userInitials(user?.name ?? null, user?.email);
 
   return (
     <header
@@ -50,9 +64,18 @@ export function Topbar({ area, items }: TopbarProps) {
 
         <div className="ml-auto flex items-center gap-2">
           {area !== 'cartorio' && <ThemeToggle />}
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs">MC</AvatarFallback>
+          <Avatar className="h-8 w-8" title={user?.name ?? user?.email ?? undefined}>
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void logout()}
+            aria-label="Sair"
+            title="Sair"
+          >
+            <LogOut />
+          </Button>
         </div>
       </div>
     </header>
