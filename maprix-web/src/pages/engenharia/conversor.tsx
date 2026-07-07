@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeftRight, FileText, Ruler, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { convertPolygon as convertPolygonGeo } from '@maprix/geo-core';
-import type { ConferenciaResult, Polygon, Segment } from '@maprix/types';
+import type { ConferenciaResult, GeoPoint, Polygon, Segment } from '@maprix/types';
 import { PolygonMap, type MapPoint } from '@/components/engenharia/polygon-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -100,6 +100,26 @@ export default function ConversorPage() {
     }
   }, [input.polygon]);
 
+  const dualView = useMemo(() => {
+    if (!input.polygon) return null;
+    try {
+      const ll = convertPolygonGeo(input.polygon, { type: 'LatLong', datum: 'SIRGAS2000' });
+      const lon0 = ll.points[0]?.x ?? 0;
+      const lat0 = ll.points[0]?.y ?? 0;
+      const zone = Math.floor((lon0 + 180) / 6) + 1;
+      const hemisphere: 'N' | 'S' = lat0 < 0 ? 'S' : 'N';
+      const utm = convertPolygonGeo(input.polygon, {
+        type: 'UTM',
+        zone,
+        hemisphere,
+        datum: 'SIRGAS2000',
+      });
+      return { ll: ll.points, utm: utm.points, zone, hemisphere };
+    } catch {
+      return null;
+    }
+  }, [input.polygon]);
+
   return (
     <>
       <PageHeader
@@ -125,6 +145,8 @@ export default function ConversorPage() {
             {mapPoints.length >= 3 && (
               <PolygonMap points={mapPoints} className="h-72 w-full" />
             )}
+
+            {dualView && <DualCoordsCard data={dualView} />}
 
             <h2 className="text-xl font-semibold tracking-tight">Resultado</h2>
 
@@ -228,6 +250,79 @@ function ConvertResult({
           {conferencia.status === 'ok' && <ConferenciaCard data={conferencia.data.conferencia} />}
         </TabsContent>
       </Tabs>
+    </motion.div>
+  );
+}
+
+function DualCoordsCard({
+  data,
+}: {
+  data: { ll: GeoPoint[]; utm: GeoPoint[]; zone: number; hemisphere: 'N' | 'S' };
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-base">Lat/Long × UTM</CardTitle>
+          <Badge variant="secondary" className="shrink-0">
+            Zona {data.zone}
+            {data.hemisphere} · SIRGAS2000
+          </Badge>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-2">
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Lat / Long
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vértice</TableHead>
+                  <TableHead className="text-right">Latitude</TableHead>
+                  <TableHead className="text-right">Longitude</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.ll.map((p, i) => (
+                  <TableRow key={`${p.id}-${i}`}>
+                    <TableCell className="font-medium">{p.id}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{p.y.toFixed(8)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{p.x.toFixed(8)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              UTM (m)
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vértice</TableHead>
+                  <TableHead className="text-right">E</TableHead>
+                  <TableHead className="text-right">N</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.utm.map((p, i) => (
+                  <TableRow key={`${p.id}-${i}`}>
+                    <TableCell className="font-medium">{p.id}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{p.x.toFixed(3)}</TableCell>
+                    <TableCell className="text-right font-mono text-xs">{p.y.toFixed(3)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }
