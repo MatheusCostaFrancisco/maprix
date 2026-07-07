@@ -9,6 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Logo } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
 import type { NavItem } from './nav-items';
 
@@ -29,8 +30,7 @@ export function MobileSidebar({ items, areaLabel }: MobileSidebarProps) {
       <SheetContent side="left" className="w-72 p-0">
         <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <img src="/logo-mark.svg" alt="" aria-hidden className="h-6 w-6" />
-            Maprix
+            <Logo wordmarkClassName="text-base" />
             <span className="text-xs text-muted-foreground font-normal">· {areaLabel}</span>
           </SheetTitle>
         </SheetHeader>

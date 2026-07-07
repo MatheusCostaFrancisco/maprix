@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { Logo } from '@/components/shared/logo';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import type { Area, NavItem } from './nav-items';
@@ -41,9 +42,8 @@ export function Topbar({ area, items }: TopbarProps) {
       <div className="h-full flex items-center gap-2 px-3 sm:px-4">
         <MobileSidebar items={items} areaLabel={areaLabel} />
 
-        <a href="/" className="md:hidden flex items-center gap-2 min-w-0" aria-label="Maprix">
-          <img src="/logo-mark.svg" alt="" aria-hidden className="h-6 w-6 shrink-0" />
-          <span className="text-base font-semibold tracking-tight truncate">Maprix</span>
+        <a href="/" className="md:hidden flex items-center min-w-0" aria-label="Maprix">
+          <Logo wordmarkClassName="text-base truncate" />
         </a>
 
         <nav

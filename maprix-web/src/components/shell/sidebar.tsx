@@ -1,6 +1,7 @@
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Logo, LogoMark } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
 import type { NavItem } from './nav-items';
 
@@ -28,12 +29,9 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
         )}
       >
         {collapsed ? (
-          <img src="/logo-mark.svg" alt="Maprix" className="h-6 w-6" />
+          <LogoMark className="h-7 w-7" />
         ) : (
-          <div className="flex items-center gap-2 min-w-0">
-            <img src="/logo-mark.svg" alt="" aria-hidden className="h-6 w-6 shrink-0" />
-            <span className="text-base font-semibold tracking-tight truncate">Maprix</span>
-          </div>
+          <Logo className="min-w-0" wordmarkClassName="text-base truncate" />
         )}
       </div>
 
