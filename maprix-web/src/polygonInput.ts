@@ -34,11 +34,12 @@ export function parsePoints(text: string): ParseResult {
   return { points, errors };
 }
 
-export const DEFAULT_SAMPLE = `# id, x, y (1 por linha) — exemplo em UTM 22S SIRGAS2000
-P1, 500000, 7500000
-P2, 500100, 7500000
-P3, 500100, 7500100
-P4, 500000, 7500100`;
+export const DEFAULT_SAMPLE = `# id, x, y (1 por linha) — parcela rural perto de Pres. Prudente/SP (UTM 22S SIRGAS2000)
+P1, 458103.76, 7551876.01
+P2, 458258.76, 7551871.01
+P3, 458268.76, 7551976.01
+P4, 458183.76, 7552011.01
+P5, 458093.76, 7551966.01`;
 
 export const SYSTEM_PRESETS: Array<{ label: string; value: CoordinateSystem }> = [
   { label: 'UTM 22S (SIRGAS2000)', value: { type: 'UTM', zone: 22, hemisphere: 'S', datum: 'SIRGAS2000' } },
