@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeftRight, FileText, Ruler, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ConferenciaResult, Polygon, Segment } from '@maprix/types';
@@ -103,17 +104,19 @@ export default function ConversorPage() {
       {forcedUnauthorized ? (
         <UnauthorizedState />
       ) : (
-        <div className="space-y-6">
-          <PointsInputCard input={input} showTolerance />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
+          <div className="lg:sticky lg:top-20">
+            <PointsInputCard input={input} showTolerance />
+          </div>
 
-          <section className="space-y-3">
+          <section className="min-w-0 space-y-3">
             <h2 className="text-xl font-semibold tracking-tight">Resultado</h2>
 
             {convert.status === 'idle' && (
               <ResultIdle
                 icon={Target}
                 title="Sem conversão ainda"
-                description='Ajuste pontos e sistemas acima, depois clique em "Converter & conferir".'
+                description='Ajuste pontos e sistemas ao lado, depois clique em "Converter & conferir".'
               />
             )}
 
@@ -157,8 +160,14 @@ function ConvertResult({
   onTabChange: (v: 'coords' | 'segmentos' | 'conferencia') => void;
   onRetryConferencia: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
-    <div className="space-y-4">
+    <motion.div
+      className="space-y-4"
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Área" value={`${data.area_m2.toFixed(2)} m²`} icon={Ruler} />
         <StatCard label="Perímetro" value={`${data.perimetro_m.toFixed(2)} m`} icon={Ruler} />
@@ -203,7 +212,7 @@ function ConvertResult({
           {conferencia.status === 'ok' && <ConferenciaCard data={conferencia.data.conferencia} />}
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }
 
