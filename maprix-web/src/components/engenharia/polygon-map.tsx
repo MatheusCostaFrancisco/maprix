@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Home, Maximize2, MapPin, Satellite } from 'lucide-react';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import { cn } from '@/lib/utils';
 
 export interface MapPoint {
@@ -77,6 +76,15 @@ function fitBounds(map: mapboxgl.Map, points: MapPoint[], padding = 64) {
 }
 
 function ensureLayers(map: mapboxgl.Map, points: MapPoint[]) {
+  // O estilo pode ainda estar carregando (troca de estilo, StrictMode, HMR).
+  // Adicionar sources/layers antes disso lança "Style is not done loading".
+  if (!map.isStyleLoaded()) {
+    map.once('idle', () => {
+      if (map.getContainer()) ensureLayers(map, points);
+    });
+    return;
+  }
+
   const polyData = polygonGeoJSON(points);
   const ptsData = pointsGeoJSON(points);
 
@@ -180,15 +188,23 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    ensureLayers(map, safePoints);
-    if (safePoints.length) fitBounds(map, safePoints);
+    try {
+      ensureLayers(map, safePoints);
+      if (safePoints.length) fitBounds(map, safePoints);
+    } catch {
+      /* nunca deixa um erro do mapa derrubar a página */
+    }
   }, [safePoints, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    map.setStyle(satellite ? SATELLITE_STYLE : STREET_STYLE);
-    map.once('style.load', () => ensureLayers(map, safePoints));
+    try {
+      map.setStyle(satellite ? SATELLITE_STYLE : STREET_STYLE);
+      map.once('idle', () => ensureLayers(map, safePoints));
+    } catch {
+      /* troca de estilo pode correr com desmontagem — ignora */
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [satellite]);
 

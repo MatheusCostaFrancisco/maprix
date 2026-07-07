@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Toaster } from 'sonner';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { TooltipProvider } from './components/ui/tooltip';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/auth-context';

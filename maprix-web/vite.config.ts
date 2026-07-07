@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [react()],
@@ -10,6 +10,6 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
   },
-});
+})
