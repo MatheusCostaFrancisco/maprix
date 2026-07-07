@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeftRight, FileText, Ruler, Target } from 'lucide-react';
 import { toast } from 'sonner';
+import { convertPolygon as convertPolygonGeo } from '@maprix/geo-core';
 import type { ConferenciaResult, Polygon, Segment } from '@maprix/types';
+import { PolygonMap, type MapPoint } from '@/components/engenharia/polygon-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,6 +90,16 @@ export default function ConversorPage() {
 
   const canRun = !!input.polygon;
 
+  const mapPoints: MapPoint[] = useMemo(() => {
+    if (!input.polygon) return [];
+    try {
+      const wgs = convertPolygonGeo(input.polygon, { type: 'LatLong', datum: 'WGS84' });
+      return wgs.points.map((p) => ({ id: p.id, lon: p.x, lat: p.y }));
+    } catch {
+      return [];
+    }
+  }, [input.polygon]);
+
   return (
     <>
       <PageHeader
@@ -110,6 +122,10 @@ export default function ConversorPage() {
           </div>
 
           <section className="min-w-0 space-y-3">
+            {mapPoints.length >= 3 && (
+              <PolygonMap points={mapPoints} className="h-72 w-full" />
+            )}
+
             <h2 className="text-xl font-semibold tracking-tight">Resultado</h2>
 
             {convert.status === 'idle' && (
