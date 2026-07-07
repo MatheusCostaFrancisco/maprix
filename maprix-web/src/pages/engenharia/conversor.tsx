@@ -94,7 +94,17 @@ export default function ConversorPage() {
     if (!input.polygon) return [];
     try {
       const wgs = convertPolygonGeo(input.polygon, { type: 'LatLong', datum: 'WGS84' });
-      return wgs.points.map((p) => ({ id: p.id, lon: p.x, lat: p.y }));
+      return wgs.points
+        .map((p) => ({ id: p.id, lon: p.x, lat: p.y }))
+        .filter(
+          (p) =>
+            Number.isFinite(p.lon) &&
+            Number.isFinite(p.lat) &&
+            p.lat >= -90 &&
+            p.lat <= 90 &&
+            p.lon >= -180 &&
+            p.lon <= 180,
+        );
     } catch {
       return [];
     }

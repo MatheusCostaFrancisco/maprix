@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Maximize2, MapPin, Satellite } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -16,6 +16,18 @@ const SATELLITE_STYLE = 'mapbox://styles/mapbox/satellite-streets-v12';
 
 const CYAN = '#3FB8E0';
 const NAVY = '#1A2847';
+
+/** Coordenada geográfica válida — evita LngLat fora de faixa quebrar o Mapbox. */
+function isValidLngLat(p: MapPoint): boolean {
+  return (
+    Number.isFinite(p.lon) &&
+    Number.isFinite(p.lat) &&
+    p.lat >= -90 &&
+    p.lat <= 90 &&
+    p.lon >= -180 &&
+    p.lon <= 180
+  );
+}
 
 function polygonGeoJSON(points: MapPoint[]) {
   if (points.length < 3) return { type: 'FeatureCollection' as const, features: [] };
@@ -41,16 +53,21 @@ function pointsGeoJSON(points: MapPoint[]) {
 }
 
 function fitBounds(map: mapboxgl.Map, points: MapPoint[], padding = 64) {
-  if (!points.length) return;
-  const lons = points.map((p) => p.lon);
-  const lats = points.map((p) => p.lat);
-  map.fitBounds(
-    [
-      [Math.min(...lons), Math.min(...lats)],
-      [Math.max(...lons), Math.max(...lats)],
-    ],
-    { padding, duration: 600, maxZoom: 18 },
-  );
+  const valid = points.filter(isValidLngLat);
+  if (!valid.length) return;
+  const lons = valid.map((p) => p.lon);
+  const lats = valid.map((p) => p.lat);
+  try {
+    map.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding, duration: 600, maxZoom: 18 },
+    );
+  } catch {
+    /* bounds inválidos (coordenadas fora de faixa) — ignora sem quebrar o mapa */
+  }
 }
 
 function ensureLayers(map: mapboxgl.Map, points: MapPoint[]) {
@@ -102,6 +119,9 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
   const [satellite, setSatellite] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // Só coordenadas geográficas válidas chegam ao Mapbox.
+  const safePoints = useMemo(() => points.filter(isValidLngLat), [points]);
+
   useEffect(() => {
     if (!TOKEN || !containerRef.current) return;
     mapboxgl.accessToken = TOKEN;
@@ -130,15 +150,15 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
-    ensureLayers(map, points);
-    if (points.length) fitBounds(map, points);
-  }, [points, ready]);
+    ensureLayers(map, safePoints);
+    if (safePoints.length) fitBounds(map, safePoints);
+  }, [safePoints, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     map.setStyle(satellite ? SATELLITE_STYLE : STREET_STYLE);
-    map.once('style.load', () => ensureLayers(map, points));
+    map.once('style.load', () => ensureLayers(map, safePoints));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [satellite]);
 
@@ -165,7 +185,7 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
   return (
     <div className={cn('relative overflow-hidden rounded-lg border border-border', className)}>
       <div ref={containerRef} className="absolute inset-0" />
-      {points.length > 0 && (
+      {safePoints.length > 0 && (
         <div className="absolute left-3 top-3 z-10 flex gap-1.5">
           <button
             type="button"
@@ -182,7 +202,7 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
           </button>
           <button
             type="button"
-            onClick={() => mapRef.current && fitBounds(mapRef.current, points)}
+            onClick={() => mapRef.current && fitBounds(mapRef.current, safePoints)}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card/90 px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} />
