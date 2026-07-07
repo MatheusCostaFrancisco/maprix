@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useSidebarState } from '@/hooks/use-sidebar-state';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
@@ -18,6 +19,8 @@ interface AppShellProps {
 export function AppShell({ area }: AppShellProps) {
   const items = getNav(area);
   const { collapsed, toggle } = useSidebarState();
+  const location = useLocation();
+  const reduce = useReducedMotion();
 
   useForcedLightTheme(area === 'cartorio');
 
@@ -27,9 +30,15 @@ export function AppShell({ area }: AppShellProps) {
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar area={area} items={items} />
         <main className="flex-1 w-full">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
+          <motion.div
+            key={location.pathname}
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+            className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8"
+          >
             <Outlet />
-          </div>
+          </motion.div>
         </main>
       </div>
     </div>

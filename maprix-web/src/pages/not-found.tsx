@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/shared/empty-state';
 export function NotFound() {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+    <div className="min-h-[100dvh] bg-background text-foreground flex items-center justify-center">
       <EmptyState
         icon={FileQuestion}
         title="Página não encontrada"
