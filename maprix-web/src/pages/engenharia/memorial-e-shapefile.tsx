@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Archive, Download, FileText, Loader2, Ruler, Wand2 } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  Check,
+  ChevronRight,
+  Copy,
+  FileText,
+  Layers,
+  Loader2,
+  Ruler,
+  Wand2,
+  type LucideIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { Polygon } from '@maprix/types';
 import { Button } from '@/components/ui/button';
@@ -30,6 +41,7 @@ import {
   gerarMemorial,
 } from '@/api';
 import { triggerBlobDownload } from '@/lib/download';
+import { cn } from '@/lib/utils';
 
 type AsyncState<T> =
   | { status: 'idle' }
@@ -112,30 +124,41 @@ export default function MemorialEShapefilePage() {
       {forcedUnauthorized ? (
         <UnauthorizedState />
       ) : (
-        <div className="space-y-6">
-          <PointsInputCard input={input} />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
+          <div className="space-y-6 lg:sticky lg:top-20">
+            <PointsInputCard input={input} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Exportar</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={onBaixarDxf} disabled={!canRun || dxfLoading}>
-                {dxfLoading ? <Loader2 className="animate-spin" /> : <Download />}
-                Baixar DXF
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onBaixarShapefile}
-                disabled={!canRun || shapefileLoading}
-              >
-                {shapefileLoading ? <Loader2 className="animate-spin" /> : <Archive />}
-                Baixar shapefile SIG-RI
-              </Button>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Exportar</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <ExportButton
+                  icon={FileText}
+                  title="Memorial DXF"
+                  description="Desenho vetorial para CAD / DWG"
+                  loading={dxfLoading}
+                  disabled={!canRun}
+                  onClick={onBaixarDxf}
+                />
+                <ExportButton
+                  icon={Layers}
+                  title="Shapefile SIG-RI"
+                  description=".shp · .shx · .dbf · .prj — CNJ 195/2025"
+                  loading={shapefileLoading}
+                  disabled={!canRun}
+                  onClick={onBaixarShapefile}
+                />
+                {!canRun && (
+                  <p className="pt-1 text-xs text-muted-foreground">
+                    Informe ao menos 3 pontos válidos para habilitar a exportação.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          <section className="space-y-3">
+          <section className="min-w-0 space-y-3">
             <h2 className="text-xl font-semibold tracking-tight">Memorial descritivo</h2>
 
             {memorial.status === 'idle' && (
@@ -164,8 +187,27 @@ export default function MemorialEShapefilePage() {
 }
 
 function MemorialResult({ data }: { data: MemorialResponse }) {
+  const reduce = useReducedMotion();
+  const [copied, setCopied] = useState(false);
+
+  async function copyCursivo() {
+    try {
+      await navigator.clipboard.writeText(data.cursivo);
+      setCopied(true);
+      toast.success('Memorial cursivo copiado');
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <motion.div
+      className="space-y-4"
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Vértices" value={data.resumo.num_vertices} icon={FileText} />
         <StatCard label="Área" value={`${data.resumo.area_m2.toFixed(2)} m²`} icon={Ruler} />
@@ -173,8 +215,12 @@ function MemorialResult({ data }: { data: MemorialResponse }) {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-base">Forma cursiva</CardTitle>
+          <Button type="button" variant="ghost" size="sm" onClick={copyCursivo}>
+            {copied ? <Check /> : <Copy />}
+            {copied ? 'Copiado' : 'Copiar'}
+          </Button>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
@@ -212,6 +258,45 @@ function MemorialResult({ data }: { data: MemorialResponse }) {
           </Table>
         </CardContent>
       </Card>
-    </div>
+    </motion.div>
+  );
+}
+
+function ExportButton({
+  icon: Icon,
+  title,
+  description,
+  loading,
+  disabled,
+  onClick,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  loading: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      className={cn(
+        'group flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left',
+        'transition-colors hover:border-primary/50 hover:bg-secondary',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border disabled:hover:bg-card',
+      )}
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-secondary text-foreground">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" strokeWidth={1.75} />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block truncate text-xs text-muted-foreground">{description}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </button>
   );
 }

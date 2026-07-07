@@ -1,5 +1,6 @@
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowUpDown, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { SYSTEM_PRESETS, systemKey } from '@/polygonInput';
 import type { InputState } from '@/hooks/use-input-state';
 
@@ -21,10 +23,28 @@ interface Props {
 }
 
 export function PointsInputCard({ input, showTolerance = false }: Props) {
+  const swapSystems = () => {
+    const prevSource = input.sourceIdx;
+    input.setSourceIdx(input.targetIdx);
+    input.setTargetIdx(prevSource);
+  };
+  const ready = input.points.length >= 3;
+  const hasErrors = input.parseErrors.length > 0;
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle>Entrada de pontos</CardTitle>
+        <div className="flex items-center gap-1">
+          <Button type="button" variant="ghost" size="sm" onClick={swapSystems}>
+            <ArrowUpDown />
+            Inverter
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={input.reset}>
+            <RotateCcw />
+            Exemplo
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -37,9 +57,16 @@ export function PointsInputCard({ input, showTolerance = false }: Props) {
             spellCheck={false}
             className="font-mono text-xs"
           />
-          <p className="text-xs text-muted-foreground">
+          <p
+            className={cn(
+              'flex items-center gap-1.5 text-xs',
+              ready && !hasErrors ? 'text-success' : 'text-muted-foreground',
+            )}
+          >
+            {ready && !hasErrors && <CheckCircle2 className="h-3.5 w-3.5" />}
             {input.points.length} ponto(s) válido(s)
-            {input.parseErrors.length > 0 ? ` · ${input.parseErrors.length} erro(s) de parsing` : ''}
+            {hasErrors ? ` · ${input.parseErrors.length} erro(s) de parsing` : ''}
+            {!ready && !hasErrors ? ' · mínimo 3 para converter' : ''}
           </p>
         </div>
 

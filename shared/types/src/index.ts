@@ -49,3 +49,55 @@ export interface User {
   name: string | null;
   role: Role;
 }
+
+// --- Cartório ---------------------------------------------------------------
+
+export type MatriculaStatus = 'ativa' | 'em_analise' | 'cancelada';
+
+/** Matrícula imobiliária gerida pelo cartório. `areaM2` em camelCase (nunca snake). */
+export interface Matricula {
+  id: string;
+  numero: string;
+  cartorio: string | null;
+  proprietario: string;
+  municipio: string | null;
+  uf: string | null;
+  areaM2: number | null;
+  status: MatriculaStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProtocoloTipo =
+  | 'georreferenciamento'
+  | 'retificacao'
+  | 'desmembramento'
+  | 'unificacao';
+
+export type ProtocoloStatus =
+  | 'recebido'
+  | 'em_analise'
+  | 'exigencia'
+  | 'aprovado'
+  | 'rejeitado';
+
+/** Protocolo de entrada de um pedido no cartório, opcionalmente ligado a uma matrícula. */
+export interface Protocolo {
+  id: string;
+  numero: string;
+  requerente: string;
+  tipo: ProtocoloTipo;
+  status: ProtocoloStatus;
+  matriculaId: string | null;
+  observacao: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Contadores para o painel do cartório. */
+export interface CartorioOverview {
+  matriculas: number;
+  protocolosAbertos: number;
+  protocolosExigencia: number;
+  protocolosAprovados: number;
+}

@@ -128,3 +128,47 @@ Itens adiados conscientemente. Cada um tem **quando reavaliar** e **justificativ
 - Storage: tabela `users` no MySQL existente (mesma stack do AcoVitta)
 - 2FA: avaliar quando houver usuário pagante (não bloqueante pra MVP)
 - O certificado digital ICP-Brasil **não** entra aqui — o profissional autentica direto no portal do ONR para o upload final do SIG-RI.
+
+**Atualização (2026-07-07):** auth JWT por role já foi implementada (login/signup/logout/me, cookie httpOnly, `requireAuth`/`requireRole`). Este item permanece só para o histórico da decisão; o gap está fechado. Ver item 11 sobre o stub residual.
+
+---
+
+## 8. Bundle JS único de ~513KB (162KB gzip)
+
+**Decidido em:** 2026-07-07 (refator de UI completo).
+
+**Estado atual:** `vite build` emite um único chunk `index-*.js` de ~513KB (proj4 + @turf + framer-motion + react-router no mesmo bundle). Vite avisa "chunks larger than 500 kB".
+
+**Por que foi adiado:** app logado, sem custo de SEO; 162KB gzip é aceitável para o público-alvo (desktop, conexão de escritório). Otimizar agora é polir sem dor real.
+
+**Quando reavaliar:** quando o time-to-interactive incomodar em campo, ou ao adicionar mapa interativo (mais peso). Caminho: `manualChunks` separando geo-core/proj4 e lazy-load das rotas via `React.lazy`.
+
+---
+
+## 9. Cartório — CRUD parcial e workspace compartilhado
+
+**Decidido em:** 2026-07-07 (M6/M7 do refator).
+
+**Estado atual:** matrículas e protocolos têm listar/criar/atualizar, busca e filtro por status, com `limit(200)` sem paginação. Não há tela de detalhe/edição completa de matrícula, nem edição de observação de protocolo pela UI. Registros são visíveis a **qualquer** usuário role `cartorio` (workspace único, sem multi-tenant por cartório); `created_by` é gravado só para auditoria.
+
+**Quando reavaliar:** quando um segundo cartório entrar (isolar por tenant), ou quando uma base passar de ~200 registros (paginação/cursor). Detalhe/edição: quando um oficial pedir para corrigir dados de uma matrícula já cadastrada.
+
+---
+
+## 10. `docker compose` não verificado em runtime
+
+**Decidido em:** 2026-07-07 (M9).
+
+**Estado atual:** `backend/Dockerfile` + `docker-compose.yml` criados e validados por `docker compose config`, mas **não** buildados/executados nesta sessão — o daemon do Docker Desktop estava offline. A lógica (build do workspace `backend...`, migrate→seed→start) segue o mesmo caminho do Railway, mas o primeiro `docker compose up --build` precisa ser rodado e conferido.
+
+**Quando reavaliar:** no próximo boot do Docker Desktop — rodar `docker compose up --build`, confirmar `/health` e login com a conta semeada.
+
+---
+
+## 11. Stub `?state=unauthorized` residual nas telas de engenharia
+
+**Decidido em:** 2026-07-07.
+
+**Estado atual:** `useForcedUnauthorized`/`UnauthorizedState` (em `result-states.tsx`) ainda renderizam o estado "sem permissão" via query param `?state=unauthorized`. Com auth real + `require-auth`, esse stub é redundante como mecanismo de acesso, servindo agora só de preview do estado visual.
+
+**Quando reavaliar:** ao criar testes visuais (item 2), migrar esse preview para lá e remover o gancho do runtime das páginas.

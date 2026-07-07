@@ -13,7 +13,7 @@ Microsaas web B2B para engenheiros agrônomos/agrimensores que trabalham com geo
 ```
 maprix/
 ├── maprix-web/       # Frontend React + Vite + TypeScript
-├── backend/          # API Express + TypeScript + MySQL
+├── backend/          # API Express + TypeScript + Postgres (Drizzle)
 ├── shared/
 │   ├── geo-core/     # Motor geodésico (proj4js, turf)
 │   └── types/        # Contratos TS compartilhados
@@ -45,6 +45,25 @@ pnpm --filter backend dev
 ```
 
 Health check: `GET http://localhost:3000/health` → `{ "ok": true }`.
+
+### Backend + banco via Docker
+
+Sobe Postgres + API com um comando (aplica migrations e semeia dados de
+exemplo do cartório automaticamente):
+
+```bash
+docker compose up --build
+```
+
+- API em `http://localhost:3000`, Postgres em `localhost:5432`.
+- Roda sem configuração — os defaults de dev estão no `docker-compose.yml`.
+  Para produção, defina `JWT_SECRET` e `SEED_CARTORIO_PASSWORD` no ambiente.
+- Conta de cartório semeada: `cartorio@maprix.com.br` / `cartorio123`.
+- O frontend continua fora do compose: rode `pnpm --filter maprix-web dev`
+  com `VITE_API_URL=http://localhost:3000`.
+
+Derrubar (mantém o volume do banco): `docker compose down`.
+Zerar o banco: `docker compose down -v`.
 
 ## Scripts raiz
 

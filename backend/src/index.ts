@@ -14,6 +14,7 @@ import {
   gerarShapefileZip,
 } from '@maprix/geo-core';
 import authRoutes from './routes/auth.js';
+import cartorioRoutes from './routes/cartorio.js';
 
 const app = express();
 app.use(
@@ -30,6 +31,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/cartorio', cartorioRoutes);
 
 function assertPolygon(p: unknown): asserts p is Polygon {
   if (!p || typeof p !== 'object') throw new Error('polygon ausente');

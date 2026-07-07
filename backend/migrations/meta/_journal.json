@@ -8,6 +8,13 @@
       "when": 1779749392062,
       "tag": "0000_new_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783436201028,
+      "tag": "0001_cartorio",
+      "breakpoints": true
     }
   ]
 }
