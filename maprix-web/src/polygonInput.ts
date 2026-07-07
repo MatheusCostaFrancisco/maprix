@@ -59,3 +59,23 @@ export function systemKey(sys: CoordinateSystem): string {
 export function buildPolygon(points: GeoPoint[], system: CoordinateSystem): Polygon {
   return { points, system };
 }
+
+export type Sentido = 'horario' | 'antihorario';
+
+/**
+ * Reordena o anel de pontos a partir de `startIdx` e, se `sentido` for
+ * anti-horário, inverte a ordem de caminhamento (mantendo o vértice inicial).
+ * Não muda coordenadas — só a ordem de travessia (afeta memorial e winding do shapefile).
+ */
+export function reorderPoints(
+  points: GeoPoint[],
+  startIdx: number,
+  sentido: Sentido,
+): GeoPoint[] {
+  const n = points.length;
+  if (n === 0) return points;
+  const s = ((startIdx % n) + n) % n;
+  let ordered = [...points.slice(s), ...points.slice(0, s)];
+  if (sentido === 'antihorario') ordered = [ordered[0]!, ...ordered.slice(1).reverse()];
+  return ordered;
+}

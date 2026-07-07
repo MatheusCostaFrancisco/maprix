@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { Suspense, lazy, useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowLeftRight, FileText, Layers, Loader2 } from 'lucide-react';
@@ -8,6 +8,21 @@ import { Label } from '@/components/ui/label';
 import { Logo, LogoMark } from '@/components/shared/logo';
 import { useAuth } from '@/contexts/auth-context';
 import { ROLE_HOME } from '@/lib/roles';
+
+// Lazy: mantém three.js fora do bundle principal — só carrega no login desktop.
+const ThreeBackground = lazy(() => import('@/components/auth/three-background'));
+
+function useIsDesktop() {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return desktop;
+}
 
 const ERR_MAP: Record<string, string> = {
   invalid_credentials: 'E-mail ou senha incorretos.',
@@ -25,6 +40,7 @@ export default function LoginPage() {
   const { user, loading, login, signup } = useAuth();
   const navigate = useNavigate();
   const reduce = useReducedMotion();
+  const isDesktop = useIsDesktop();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,6 +90,13 @@ export default function LoginPage() {
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_40rem_at_20%_10%,rgba(63,184,224,0.12),transparent)]"
         />
+        {isDesktop && !reduce && (
+          <Suspense fallback={null}>
+            <div aria-hidden className="absolute inset-0 opacity-70">
+              <ThreeBackground />
+            </div>
+          </Suspense>
+        )}
 
         <Logo
           wordmarkClassName="text-white text-xl"

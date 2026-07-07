@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Check,
@@ -7,6 +7,8 @@ import {
   FileText,
   Layers,
   Loader2,
+  RotateCcw,
+  RotateCw,
   Ruler,
   Wand2,
   type LucideIcon,
@@ -15,6 +17,14 @@ import { toast } from 'sonner';
 import type { Polygon } from '@maprix/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -42,6 +52,7 @@ import {
 } from '@/api';
 import { triggerBlobDownload } from '@/lib/download';
 import { cn } from '@/lib/utils';
+import { reorderPoints, type Sentido } from '@/polygonInput';
 
 type AsyncState<T> =
   | { status: 'idle' }
@@ -56,6 +67,17 @@ export default function MemorialEShapefilePage() {
   const [memorial, setMemorial] = useState<AsyncState<MemorialResponse>>({ status: 'idle' });
   const [dxfLoading, setDxfLoading] = useState(false);
   const [shapefileLoading, setShapefileLoading] = useState(false);
+  const [startIdx, setStartIdx] = useState(0);
+  const [sentido, setSentido] = useState<Sentido>('horario');
+
+  // Polígono com a ordem de travessia escolhida pelo usuário (vértice inicial + sentido).
+  const orderedPolygon: Polygon | null = useMemo(() => {
+    if (!input.polygon) return null;
+    return {
+      ...input.polygon,
+      points: reorderPoints(input.polygon.points, startIdx, sentido),
+    };
+  }, [input.polygon, startIdx, sentido]);
 
   async function runMemorial(poly: Polygon) {
     setMemorial({ status: 'loading' });
@@ -71,10 +93,10 @@ export default function MemorialEShapefilePage() {
   }
 
   async function onBaixarDxf() {
-    if (!input.polygon) return;
+    if (!orderedPolygon) return;
     setDxfLoading(true);
     try {
-      const blob = await downloadMemorialDxf(input.polygon);
+      const blob = await downloadMemorialDxf(orderedPolygon);
       triggerBlobDownload(blob, 'memorial-maprix.dxf');
       toast.success('DXF baixado');
     } catch (err) {
@@ -87,10 +109,10 @@ export default function MemorialEShapefilePage() {
   }
 
   async function onBaixarShapefile() {
-    if (!input.polygon) return;
+    if (!orderedPolygon) return;
     setShapefileLoading(true);
     try {
-      const blob = await downloadShapefile(input.polygon);
+      const blob = await downloadShapefile(orderedPolygon);
       triggerBlobDownload(blob, `maprix-sigri-${Date.now()}.zip`);
       toast.success('Shapefile SIG-RI baixado');
     } catch (err) {
@@ -111,7 +133,7 @@ export default function MemorialEShapefilePage() {
         description="Gere o memorial descritivo e o pacote SIG-RI do imóvel a partir dos mesmos pontos do Conversor."
         actions={
           <Button
-            onClick={() => input.polygon && runMemorial(input.polygon)}
+            onClick={() => orderedPolygon && runMemorial(orderedPolygon)}
             disabled={!canRun || memorial.status === 'loading'}
             size="sm"
           >
@@ -127,6 +149,54 @@ export default function MemorialEShapefilePage() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_1fr]">
           <div className="space-y-6 lg:sticky lg:top-20">
             <PointsInputCard input={input} />
+
+            {input.points.length >= 3 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Configuração do memorial</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="v-inicial">Vértice inicial</Label>
+                    <Select value={String(startIdx)} onValueChange={(v) => setStartIdx(Number(v))}>
+                      <SelectTrigger id="v-inicial">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {input.points.map((p, i) => (
+                          <SelectItem key={`${p.id}-${i}`} value={String(i)}>
+                            {p.id || `P${i + 1}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sentido de caminhamento</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={sentido === 'horario' ? 'default' : 'outline'}
+                        onClick={() => setSentido('horario')}
+                        className="justify-center"
+                      >
+                        <RotateCw />
+                        Horário
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={sentido === 'antihorario' ? 'default' : 'outline'}
+                        onClick={() => setSentido('antihorario')}
+                        className="justify-center"
+                      >
+                        <RotateCcw />
+                        Anti-horário
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
@@ -174,7 +244,7 @@ export default function MemorialEShapefilePage() {
             {memorial.status === 'error' && (
               <ResultError
                 message={memorial.message}
-                onRetry={() => input.polygon && runMemorial(input.polygon)}
+                onRetry={() => orderedPolygon && runMemorial(orderedPolygon)}
               />
             )}
 

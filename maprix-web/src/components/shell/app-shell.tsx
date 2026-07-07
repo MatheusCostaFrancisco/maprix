@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { Outlet, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { useSidebarState } from '@/hooks/use-sidebar-state';
 import { Sidebar } from './sidebar';
 import { Topbar } from './topbar';
@@ -37,7 +38,18 @@ export function AppShell({ area }: AppShellProps) {
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8"
           >
-            <Outlet />
+            <Suspense
+              fallback={
+                <div className="flex justify-center py-24">
+                  <Loader2
+                    className="h-6 w-6 animate-spin text-muted-foreground"
+                    aria-label="Carregando"
+                  />
+                </div>
+              }
+            >
+              <Outlet />
+            </Suspense>
           </motion.div>
         </main>
       </div>
