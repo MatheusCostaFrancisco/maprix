@@ -152,9 +152,7 @@ export default function ConversorPage() {
           </div>
 
           <section className="min-w-0 space-y-3">
-            {mapPoints.length >= 3 && (
-              <PolygonMap points={mapPoints} className="h-72 w-full" />
-            )}
+            <PolygonMap points={mapPoints} className="h-72 w-full" />
 
             {dualView && <DualCoordsCard data={dualView} />}
 
