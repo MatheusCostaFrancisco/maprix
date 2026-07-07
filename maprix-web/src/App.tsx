@@ -1,12 +1,15 @@
+import { lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/shell/app-shell';
 import { RequireAuth } from '@/components/auth/require-auth';
 import LoginPage from '@/pages/login';
-import ConversorPage from '@/pages/engenharia/conversor';
-import MemorialEShapefilePage from '@/pages/engenharia/memorial-e-shapefile';
-import MatriculasPage from '@/pages/cartorio/matriculas';
-import ProtocolosPage from '@/pages/cartorio/protocolos';
 import { NotFound } from '@/pages/not-found';
+
+// Rotas pesadas (mapbox no conversor, telas do cartório) carregadas sob demanda.
+const ConversorPage = lazy(() => import('@/pages/engenharia/conversor'));
+const MemorialEShapefilePage = lazy(() => import('@/pages/engenharia/memorial-e-shapefile'));
+const MatriculasPage = lazy(() => import('@/pages/cartorio/matriculas'));
+const ProtocolosPage = lazy(() => import('@/pages/cartorio/protocolos'));
 
 export function App() {
   return (

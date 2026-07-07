@@ -143,6 +143,8 @@ Itens adiados conscientemente. Cada um tem **quando reavaliar** e **justificativ
 
 **Quando reavaliar:** quando o time-to-interactive incomodar em campo, ou ao adicionar mapa interativo (mais peso). Caminho: `manualChunks` separando geo-core/proj4 e lazy-load das rotas via `React.lazy`.
 
+**Atualização (2026-07-07):** rotas passaram a ser code-split via `React.lazy` (App.tsx) + Suspense no shell. Bundle inicial caiu para ~144KB gzip; `mapbox-gl` (~2MB) isolado no chunk do conversor, `three.js` (~242KB gzip) no chunk lazy do login. Pendente: o chunk do conversor ainda é grande por causa do mapbox-gl — avaliar lazy-load do `PolygonMap` dentro da própria rota se o conversor demorar a pintar.
+
 ---
 
 ## 9. Cartório — CRUD parcial e workspace compartilhado
