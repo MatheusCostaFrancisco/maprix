@@ -22,12 +22,12 @@ export function AppShell({ area }: AppShellProps) {
   useForcedLightTheme(area === 'cartorio');
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
-      <Sidebar items={items} collapsed={collapsed} onToggle={toggle} />
+    <div className="min-h-[100dvh] flex bg-background text-foreground">
+      <Sidebar area={area} items={items} collapsed={collapsed} onToggle={toggle} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar area={area} items={items} />
         <main className="flex-1 w-full">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 sm:py-8">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
             <Outlet />
           </div>
         </main>

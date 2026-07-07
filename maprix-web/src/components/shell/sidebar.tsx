@@ -3,15 +3,16 @@ import { NavLink } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Logo, LogoMark } from '@/components/shared/logo';
 import { cn } from '@/lib/utils';
-import type { NavItem } from './nav-items';
+import { AREA_LABELS, type Area, type NavItem } from './nav-items';
 
 interface SidebarProps {
+  area: Area;
   items: NavItem[];
   collapsed: boolean;
   onToggle: () => void;
 }
 
-export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ area, items, collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       data-collapsed={collapsed}
@@ -35,10 +36,20 @@ export function Sidebar({ items, collapsed, onToggle }: SidebarProps) {
         )}
       </div>
 
-      <nav className={cn('flex-1 p-2 space-y-1', collapsed && 'px-1')}>
+      <nav className={cn('flex-1 overflow-y-auto p-2 space-y-1', collapsed && 'px-1')}>
+        {!collapsed && (
+          <p className="px-3 pb-1 pt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {AREA_LABELS[area]}
+          </p>
+        )}
         {items.map((item) => (
           <SidebarLink key={item.to} item={item} collapsed={collapsed} />
         ))}
+        {items.length === 0 && !collapsed && (
+          <p className="px-3 py-4 text-sm text-muted-foreground">
+            Sem telas disponíveis nesta área ainda.
+          </p>
+        )}
       </nav>
 
       <div
@@ -83,17 +94,26 @@ function SidebarLink({ item, collapsed }: { item: NavItem; collapsed: boolean })
       end={false}
       className={({ isActive }) =>
         cn(
-          'group flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
+          'group relative flex items-center gap-3 rounded-md text-sm font-medium transition-colors',
           collapsed ? 'h-9 w-9 justify-center mx-auto' : 'h-9 px-3',
           isActive
-            ? 'bg-accent/10 text-accent border-l-2 border-accent pl-[10px]'
+            ? 'bg-accent/10 text-accent'
             : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
-          collapsed && 'border-l-0 pl-0',
         )
       }
     >
-      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      {({ isActive }) => (
+        <>
+          {isActive && !collapsed && (
+            <span
+              aria-hidden
+              className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-accent"
+            />
+          )}
+          <Icon className="h-4 w-4 shrink-0" strokeWidth={isActive ? 2 : 1.75} />
+          {!collapsed && <span className="truncate">{item.label}</span>}
+        </>
+      )}
     </NavLink>
   );
 

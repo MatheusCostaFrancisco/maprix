@@ -10,6 +10,11 @@ import type { Area, NavItem } from './nav-items';
 import { AREA_LABELS } from './nav-items';
 import { MobileSidebar } from './mobile-sidebar';
 
+const ROLE_LABELS: Record<Area, string> = {
+  engenharia: 'Engenheiro',
+  cartorio: 'Cartório',
+};
+
 interface TopbarProps {
   area: Area;
   items: NavItem[];
@@ -64,6 +69,13 @@ export function Topbar({ area, items }: TopbarProps) {
 
         <div className="ml-auto flex items-center gap-2">
           {area !== 'cartorio' && <ThemeToggle />}
+          <div className="mx-1 hidden h-6 w-px bg-border sm:block" aria-hidden />
+          <div className="hidden sm:flex flex-col items-end leading-tight">
+            <span className="max-w-[12rem] truncate text-sm font-medium">
+              {user?.name ?? user?.email ?? '—'}
+            </span>
+            <span className="text-xs text-muted-foreground">{ROLE_LABELS[area]}</span>
+          </div>
           <Avatar className="h-8 w-8" title={user?.name ?? user?.email ?? undefined}>
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
           </Avatar>
