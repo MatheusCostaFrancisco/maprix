@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { Maximize2, MapPin, Satellite } from 'lucide-react';
+import { Home, Maximize2, MapPin, Satellite } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,12 @@ export interface MapPoint {
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 const STREET_STYLE = 'mapbox://styles/mapbox/dark-v11';
 const SATELLITE_STYLE = 'mapbox://styles/mapbox/satellite-streets-v12';
+
+// Vista padrão: Piracicaba/SP. Limites de zoom evitam carregar tiles demais.
+const PIRACICABA: [number, number] = [-47.6492, -22.7253];
+const HOME_ZOOM = 12;
+const MIN_ZOOM = 6;
+const MAX_ZOOM = 18;
 
 const CYAN = '#3FB8E0';
 const NAVY = '#1A2847';
@@ -113,6 +119,28 @@ function ensureLayers(map: mapboxgl.Map, points: MapPoint[]) {
   }
 }
 
+function MapButton({
+  active,
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { active?: boolean }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-md border border-border bg-card/90 px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur',
+        'transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active && 'border-accent text-accent',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function PolygonMap({ points, className }: { points: MapPoint[]; className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -128,8 +156,10 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: STREET_STYLE,
-      center: [-47.77, -22.68],
-      zoom: 14,
+      center: PIRACICABA,
+      zoom: HOME_ZOOM,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
       attributionControl: false,
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
@@ -185,31 +215,27 @@ export function PolygonMap({ points, className }: { points: MapPoint[]; classNam
   return (
     <div className={cn('relative overflow-hidden rounded-lg border border-border', className)}>
       <div ref={containerRef} className="absolute inset-0" />
-      {safePoints.length > 0 && (
-        <div className="absolute left-3 top-3 z-10 flex gap-1.5">
-          <button
-            type="button"
-            onClick={() => setSatellite((s) => !s)}
-            aria-pressed={satellite}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border border-border bg-card/90 px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur',
-              'transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              satellite && 'border-accent text-accent',
-            )}
-          >
-            <Satellite className="h-3.5 w-3.5" strokeWidth={1.75} />
-            Satélite
-          </button>
-          <button
-            type="button"
-            onClick={() => mapRef.current && fitBounds(mapRef.current, safePoints)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card/90 px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+      <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
+        <MapButton onClick={() => setSatellite((s) => !s)} active={satellite} aria-pressed={satellite}>
+          <Satellite className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Satélite
+        </MapButton>
+        <MapButton
+          onClick={() =>
+            mapRef.current?.flyTo({ center: PIRACICABA, zoom: HOME_ZOOM, duration: 600 })
+          }
+          title="Voltar para Piracicaba"
+        >
+          <Home className="h-3.5 w-3.5" strokeWidth={1.75} />
+          Piracicaba
+        </MapButton>
+        {safePoints.length > 0 && (
+          <MapButton onClick={() => mapRef.current && fitBounds(mapRef.current, safePoints)}>
             <Maximize2 className="h-3.5 w-3.5" strokeWidth={1.75} />
             Ajustar
-          </button>
-        </div>
-      )}
+          </MapButton>
+        )}
+      </div>
     </div>
   );
 }
