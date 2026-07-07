@@ -1,0 +1,49 @@
+# Sobe o backend Maprix + Postgres com um comando: `docker compose up --build`.
+# Roda sem configuração (defaults de dev abaixo). O frontend continua via
+# `pnpm --filter maprix-web dev` apontando VITE_API_URL para http://localhost:3000.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: maprix
+      POSTGRES_PASSWORD: maprix
+      POSTGRES_DB: maprix
+    ports:
+      - '5432:5432'
+    volumes:
+      - maprix-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U maprix -d maprix']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://maprix:maprix@db:5432/maprix
+      JWT_SECRET: ${JWT_SECRET:-dev-insecure-secret-change-me-please}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      NODE_ENV: development
+      PORT: 3000
+      # Conta de cartório semeada (cartório é seed/convite, não signup público).
+      SEED_CARTORIO_EMAIL: ${SEED_CARTORIO_EMAIL:-cartorio@maprix.com.br}
+      SEED_CARTORIO_PASSWORD: ${SEED_CARTORIO_PASSWORD:-cartorio123}
+      SEED_CARTORIO_NAME: ${SEED_CARTORIO_NAME:-Cartório Demo}
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  maprix-db:
