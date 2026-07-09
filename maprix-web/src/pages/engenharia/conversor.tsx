@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { convertPolygon as convertPolygonGeo } from '@maprix/geo-core';
 import type { ConferenciaResult, GeoPoint, Polygon, Segment } from '@maprix/types';
 import { PolygonMap, type MapPoint } from '@/components/engenharia/polygon-map';
+import { ErrorBoundary } from '@/components/shared/error-boundary';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -152,7 +153,15 @@ export default function ConversorPage() {
           </div>
 
           <section className="min-w-0 space-y-3">
-            <PolygonMap points={mapPoints} className="h-72 w-full" />
+            <ErrorBoundary
+              fallback={
+                <div className="flex h-72 w-full items-center justify-center rounded-lg border border-dashed border-border bg-secondary/40 text-sm text-muted-foreground">
+                  Não foi possível carregar o mapa.
+                </div>
+              }
+            >
+              <PolygonMap points={mapPoints} className="h-72 w-full" />
+            </ErrorBoundary>
 
             {dualView && <DualCoordsCard data={dualView} />}
 
